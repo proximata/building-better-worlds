@@ -61,8 +61,14 @@ li+li{border-top:1px solid rgba(255,255,255,.07)}
 .dir{display:block;font-size:13px;color:var(--soft)}
 .save{padding:4px 10px;border:1px solid var(--line);background:none;font-size:13px;color:var(--soft);cursor:pointer}
 .save:hover{border-color:var(--ice);color:#fff}
-.status{position:fixed;left:0;right:0;bottom:0;padding:14px 20px;border-top:1px dashed rgba(200,241,255,.4);background:#1b1917;font-size:14px}
-.status span{display:block;max-width:880px;margin:0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulk{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:22px}
+.bulk small{font-size:13px;color:var(--soft)}
+details .bulk{margin:0;padding:12px 18px;border-top:1px dashed var(--line)}
+.zip{padding:9px 16px;border:1px dashed rgba(200,241,255,.4);background:rgba(255,255,255,.04);cursor:pointer}
+.zip:hover{border-color:var(--ice);background:rgba(255,255,255,.09)}
+.status{position:fixed;left:0;right:0;bottom:0;padding:12px 20px;border-top:1px dashed rgba(200,241,255,.4);background:#1b1917;font-size:14px}
+.status div{display:flex;align-items:center;gap:16px;max-width:880px;margin:0 auto}
+.status span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 footer{margin-top:72px;font-size:14px;color:var(--soft)}
 footer a{text-underline-offset:3px}
 @media (prefers-reduced-motion:reduce){.primary{transition:none}}
@@ -91,16 +97,17 @@ footer a{text-underline-offset:3px}
 
     <section id="content" hidden>
       <p class="lede" id="summary"></p>
+      <div class="bulk"><button class="zip" id="zip-all" type="button">Download Everything as ZIP</button><small id="zip-all-note"></small></div>
       <h2 id="top-title" hidden>Presentation</h2>
       <ul class="top" id="top" hidden></ul>
       <h2>Files by Folder</h2>
-      <p>Click a file to open it. Large files take a moment while they are prepared.</p>
+      <p>Click a file to open it, or take a whole folder as one ZIP. Large files take a moment while they are prepared.</p>
       <div id="folders"></div>
     </section>
   </main>
   <footer>Questions go to Discord or <a href="mailto:contact@proximata.io">contact@proximata.io</a>.</footer>
 </div>
-<div class="status" id="status" role="status" aria-live="polite" hidden><span id="status-text"></span></div>
+<div class="status" id="status" hidden><div><span id="status-text" role="status" aria-live="polite"></span><button class="save" id="cancel" type="button" hidden>Cancel</button></div></div>
 
 <script>
 (function () {
@@ -141,14 +148,25 @@ footer a{text-underline-offset:3px}
     dataKey = await crypto.subtle.importKey('raw', bytes(manifest.key), 'AES-GCM', false, ['decrypt']);
   }
 
+  /* One stored piece, decrypted. A dropped connection is retried a few times before giving up. */
+  async function piece(id) {
+    var last;
+    for (var attempt = 0; attempt < 4; attempt++) {
+      try {
+        var res = await fetch('d/' + id + '.bin');
+        if (!res.ok) throw new Error('offline');
+        var b = new Uint8Array(await res.arrayBuffer());
+        return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.subarray(0, 12) }, dataKey, b.subarray(12)));
+      } catch (e) { last = e; await new Promise(function (r) { setTimeout(r, 700 * (attempt + 1)); }); }
+    }
+    throw last;
+  }
+
   async function read(file, progress) {
     var parts = [];
     for (var i = 0; i < file.c.length; i++) {
       progress(i, file.c.length);
-      var res = await fetch('d/' + file.c[i] + '.bin');
-      if (!res.ok) throw new Error('offline');
-      var b = new Uint8Array(await res.arrayBuffer());
-      parts.push(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.subarray(0, 12) }, dataKey, b.subarray(12)));
+      parts.push(await piece(file.c[i]));
     }
     var ext = file.p.split('.').pop().toLowerCase();
     return new Blob(parts, { type: TYPES[ext] || 'application/octet-stream' });
@@ -177,6 +195,71 @@ footer a{text-underline-offset:3px}
     busy = false;
   }
 
+  /* ---- several files as one ZIP, built in the browser (stored, not compressed: the files are already compact) */
+  var CRC = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c; }
+    return t;
+  })();
+  function crc32(crc, u8) { crc = ~crc; for (var i = 0; i < u8.length; i++) crc = CRC[(crc ^ u8[i]) & 255] ^ (crc >>> 8); return ~crc; }
+  var cancelled = false;
+  function warnLeave(e) { e.preventDefault(); e.returnValue = ''; }
+
+  async function zip(list, prefix, archive) {
+    if (busy) { status('Still preparing the previous download. One at a time, please.'); return; }
+    busy = true; cancelled = false;
+    var total = list.reduce(function (n, f) { return n + f.s; }, 0), got = 0, ready = 0, next = 0, entries = new Array(list.length);
+    function tell() { status('Building ' + archive + ': ' + ready + ' of ' + list.length + ' files, ' + size(got) + ' of ' + size(total) + ' …'); }
+    $('cancel').hidden = false; window.addEventListener('beforeunload', warnLeave); tell();
+    async function worker() {
+      while (!cancelled) {
+        var i = next++; if (i >= list.length) return;
+        var f = list[i], crc = 0, parts = [], bytesIn = 0;
+        for (var j = 0; j < f.c.length; j++) {
+          if (cancelled) return;
+          var u8 = await piece(f.c[j]);
+          crc = crc32(crc, u8); parts.push(new Blob([u8])); bytesIn += u8.length; got += u8.length; tell();
+        }
+        if (bytesIn !== f.s) throw new Error('size');
+        entries[i] = { name: enc.encode(prefix + f.p), crc: crc >>> 0, size: f.s, parts: parts }; ready++; tell();
+      }
+    }
+    try {
+      await Promise.all([worker(), worker(), worker(), worker()].map(function (p) { return p.catch(function (e) { cancelled = true; throw e; }); }));
+      if (cancelled) { status('Cancelled. Nothing was saved.'); }
+      else {
+        var now = new Date(), out = [], central = [], offset = 0, cdSize = 0;
+        var time = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+        var date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+        entries.forEach(function (e) {
+          var h = new DataView(new ArrayBuffer(30));
+          h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+          h.setUint16(10, time, true); h.setUint16(12, date, true); h.setUint32(14, e.crc, true);
+          h.setUint32(18, e.size, true); h.setUint32(22, e.size, true); h.setUint16(26, e.name.length, true); h.setUint16(28, 0, true);
+          out.push(h.buffer, e.name); e.parts.forEach(function (p) { out.push(p); });
+          var c = new DataView(new ArrayBuffer(46));
+          c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+          c.setUint16(12, time, true); c.setUint16(14, date, true); c.setUint32(16, e.crc, true);
+          c.setUint32(20, e.size, true); c.setUint32(24, e.size, true); c.setUint16(28, e.name.length, true);
+          c.setUint32(42, offset, true);
+          central.push(c.buffer, e.name);
+          offset += 30 + e.name.length + e.size; cdSize += 46 + e.name.length;
+        });
+        var end = new DataView(new ArrayBuffer(22));
+        end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+        end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+        var url = URL.createObjectURL(new Blob(out.concat(central, [end.buffer]), { type: 'application/zip' }));
+        var a = el('a'); a.href = url; a.download = archive; D.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 30 * 60 * 1000);
+        status('Saved ' + archive + ' to your downloads.');
+      }
+    } catch (e) {
+      status('Could not finish ' + archive + '. Nothing was saved. Check your connection and try again.');
+    }
+    $('cancel').hidden = true; window.removeEventListener('beforeunload', warnLeave); busy = false;
+  }
+  $('cancel').addEventListener('click', function () { cancelled = true; status('Cancelling …'); });
+
   function row(file, shown) {
     var li = el('li'), name = file.p.split('/').pop(), ext = name.split('.').pop().toLowerCase();
     var b = el('button', 'file'); b.type = 'button';
@@ -201,6 +284,8 @@ footer a{text-underline-offset:3px}
     var groups = {};
     files.forEach(function (f) { var i = f.p.indexOf('/'); if (i > 0) (groups[f.p.slice(0, i)] = groups[f.p.slice(0, i)] || []).push(f); });
     $('summary').textContent = files.length + ' files, ' + size(total) + ' in all. Everything opens or downloads straight from this page.';
+    $('zip-all-note').textContent = size(total) + '. On a phone or a slow connection, take single folders instead.';
+    $('zip-all').addEventListener('click', function () { zip(files, 'RadiCal/', 'RadiCal-all-files.zip'); });
     if (top.length) {
       $('top-title').hidden = false; $('top').hidden = false;
       top.forEach(function (f) { $('top').appendChild(row(f, f.p)); });
@@ -211,6 +296,11 @@ footer a{text-underline-offset:3px}
       s.appendChild(el('span', 'proj', g.replace(/_scanned$/, '')));
       s.appendChild(el('span', 'meta', list.length + (list.length === 1 ? ' file, ' : ' files, ') + size(bytesIn)));
       d.appendChild(s);
+      var bulk = el('div', 'bulk'), z = el('button', 'zip', 'Download Folder as ZIP'); z.type = 'button';
+      z.setAttribute('aria-label', 'Download the folder ' + g.replace(/_scanned$/, '') + ' as a ZIP');
+      z.addEventListener('click', function () { zip(list, '', g + '.zip'); });
+      bulk.appendChild(z); bulk.appendChild(el('small', '', list.length + (list.length === 1 ? ' file, ' : ' files, ') + size(bytesIn)));
+      d.appendChild(bulk);
       list.forEach(function (f) { ul.appendChild(row(f, f.p.slice(g.length + 1))); });
       d.appendChild(ul);
       if (g === 'Manual') d.open = true;

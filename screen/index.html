@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<!--
+  Building Better Worlds Hackathon - hall screen.
+  A 9:16 portrait slide loop for the entrance hall display: event logo, QR codes, sponsors.
+
+  Running it
+    Open this page and make the browser full screen (F11, or click anywhere on the page).
+    The layout scales to any 9:16 portrait resolution and letterboxes on anything else.
+    ?rotate=90 or ?rotate=270   the display is mounted portrait but the computer still outputs landscape
+    ?only=1 | 2 | 3             hold a single slide (1 logo, 2 QR codes, 3 sponsors)
+    ?glass=0                    show the flat logo instead of the animated one (for a slow computer)
+    Arrow keys step through the slides by hand; Space pauses and resumes the loop.
+
+  Changing it
+    Seconds per slide are the data-seconds attributes on the <section> elements.
+    A running screen checks this file every five minutes and reloads itself when it has changed, so
+    when only a file in assets/ changes, also change the build stamp below.
+    build: 2026-11-13.1
+
+  Fonts: Archivo Black and JetBrains Mono, SIL Open Font License 1.1 (notices in ../index.html).
+-->
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building Better Worlds · Hall Screen</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#23201e">
+<link rel="icon" href="data:,">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/archivo-black-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/jetbrains-mono-latin.woff2" crossorigin>
+<style>
+@font-face{font-family:"Archivo Black";font-style:normal;font-weight:400;font-display:swap;src:url(assets/fonts/archivo-black-latin.woff2) format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400 800;font-display:swap;src:url(assets/fonts/jetbrains-mono-latin.woff2) format("woff2")}
+
+/* --u is one design pixel of a 1080 x 1920 stage, so the layout scales with the screen. */
+:root{
+  color-scheme:dark;
+  --ink:#23201e;
+  --ice:#c8f1ff;
+  --white:#fff;
+  --soft:rgba(255,255,255,.62);
+  --line:rgba(255,255,255,.2);
+  --headline:"Archivo Black","Archivo",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --ease:cubic-bezier(.44,0,.56,1);
+  --u:calc(min(100vw, 56.25vh) / 1080);
+}
+html.rot{--u:calc(min(100vh, 56.25vw) / 1080)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#000}
+body{color:var(--white);font-family:var(--mono);cursor:none;-webkit-font-smoothing:antialiased}
+img{display:block}
+
+.stage{position:absolute;left:50%;top:50%;width:calc(var(--u)*1080);height:calc(var(--u)*1920);margin-left:calc(var(--u)*-540);margin-top:calc(var(--u)*-960);overflow:hidden;background:var(--ink)}
+html.rot90 .stage{transform:rotate(90deg)}
+html.rot180 .stage{transform:rotate(180deg)}
+html.rot270 .stage{transform:rotate(270deg)}
+
+.backdrop{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:.24}
+
+/* ---- slides ---- */
+.slide{position:absolute;left:0;top:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;opacity:0;visibility:hidden;transition:opacity .9s var(--ease),visibility 0s linear .9s}
+.slide.is-active{opacity:1;visibility:visible;transition:opacity .9s var(--ease),visibility 0s}
+
+.mark{margin-top:calc(var(--u)*88);width:calc(var(--u)*600);height:auto}
+.slide h2{margin-top:calc(var(--u)*84);font-family:var(--headline);font-weight:400;font-size:calc(var(--u)*68);line-height:1.1;text-align:center}
+
+/* ---- 1: event logo ---- */
+.slide-title{padding-top:calc(var(--u)*430)}
+.globe{position:absolute;left:50%;top:calc(var(--u)*6);width:calc(var(--u)*1280);height:calc(var(--u)*1280);margin-left:calc(var(--u)*-640)}
+.wordmark{position:relative;width:calc(var(--u)*880);height:calc(var(--u)*432.5)}
+.glass,.glass canvas,.glass img{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.glass img{transition:opacity .2s ease-in-out}
+.glass img.opacity-100{opacity:1}
+.glass img.opacity-0{opacity:0}
+.tagline{position:relative;margin-top:calc(var(--u)*44);font-family:var(--headline);font-size:calc(var(--u)*58);line-height:1.15;text-align:center}
+.facts{position:relative;margin-top:calc(var(--u)*104);width:calc(var(--u)*760);border:calc(var(--u)*2) dashed var(--line);background:rgba(35,32,30,.74)}
+.facts div{display:flex;justify-content:space-between;align-items:baseline;padding:calc(var(--u)*26) calc(var(--u)*36)}
+.facts div+div{border-top:calc(var(--u)*2) dashed rgba(255,255,255,.14)}
+.facts dt{font-size:calc(var(--u)*26);font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.facts dd{font-size:calc(var(--u)*34)}
+.organisers{position:relative;margin-top:calc(var(--u)*150);display:flex;align-items:flex-start;justify-content:center;list-style:none}
+.organisers li{display:flex;flex-direction:column;align-items:center}
+.organisers .logo{display:flex;align-items:center;height:calc(var(--u)*64)}
+.organisers img{width:auto}
+.organisers span{margin-top:calc(var(--u)*22);font-size:calc(var(--u)*22);line-height:1;color:var(--soft);white-space:nowrap}
+.organisers .times{justify-content:center;width:calc(var(--u)*96);height:calc(var(--u)*64);color:var(--soft)}
+.organisers svg{width:calc(var(--u)*22);height:calc(var(--u)*22)}
+
+/* ---- 2: QR codes ---- */
+.scan{margin-top:calc(var(--u)*70);width:calc(var(--u)*940);list-style:none}
+.scan li{display:flex;flex-direction:column;align-items:center;text-align:center}
+.scan li+li{margin-top:calc(var(--u)*76)}
+.scan img{width:calc(var(--u)*480);height:calc(var(--u)*480);background:#fff}
+.scan div{margin-top:calc(var(--u)*30)}
+.scan h3{font-family:var(--headline);font-weight:400;font-size:calc(var(--u)*52);line-height:1.1}
+.scan p{margin-top:calc(var(--u)*12);font-size:calc(var(--u)*30);line-height:1.4;color:var(--soft)}
+
+/* ---- 3: sponsors ---- */
+.logos{list-style:none}
+.logos li{display:flex;align-items:center;justify-content:center}
+.logos a,.logos .item{display:flex;align-items:center;font-size:calc(var(--u)*var(--h));color:var(--white);text-decoration:none}
+.logos img{width:auto;height:calc(var(--u)*var(--h)*var(--s,1))}
+.logos .word{margin-left:.4em;font-size:.72em;line-height:1;font-weight:600;letter-spacing:-.02em;white-space:nowrap}
+.sponsors{--h:76;margin-top:calc(var(--u)*80)}
+.sponsors li+li{margin-top:calc(var(--u)*96)}
+.sponsors .item+.item{margin-left:calc(var(--u)*64)}
+.slide h2.minor{margin-top:calc(var(--u)*128);font-family:var(--mono);font-size:calc(var(--u)*26);font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+.partners{--h:62;margin-top:calc(var(--u)*56)}
+.partners li+li{margin-top:calc(var(--u)*64)}
+.partners .item+.item{margin-left:calc(var(--u)*64)}
+
+/* ---- loop position ---- */
+.progress{position:absolute;left:0;right:0;bottom:calc(var(--u)*64);display:flex;justify-content:center}
+.progress span{width:calc(var(--u)*120);height:calc(var(--u)*6);margin:0 calc(var(--u)*8);overflow:hidden;background:rgba(255,255,255,.16)}
+.progress i{display:block;width:100%;height:100%;background:var(--ice);transform:scaleX(0);transform-origin:0 50%}
+
+@media (prefers-reduced-motion:reduce){
+  .slide,.slide.is-active{transition:none}
+}
+</style>
+</head>
+<body>
+<main class="stage">
+  <img class="backdrop" src="assets/bg-wave.png" alt="">
+
+  <section class="slide slide-title is-active" data-seconds="10">
+    <img class="globe" src="assets/globe.svg" alt="">
+    <h1 class="wordmark"><span class="glass" role="img" aria-label="Building Better Worlds Hackathon"><canvas aria-hidden="true"></canvas><img class="opacity-100" src="assets/wordmark-stacked.svg" alt=""></span></h1>
+    <p class="tagline">A 24h hackathon in Vienna</p>
+    <dl class="facts">
+      <div><dt>Date</dt><dd>13–14 Nov 2026</dd></div>
+      <div><dt>Time</dt><dd>Fri 14:00 – Sat 18:00</dd></div>
+      <div><dt>Venue</dt><dd>HOIV, Vienna</dd></div>
+    </dl>
+    <ul class="organisers">
+      <li><div class="logo"><img src="assets/logos/proximata.png" alt="proximata" width="865" height="147" style="height:calc(var(--u)*44)"></div><span>Organiser</span></li>
+      <li aria-hidden="true"><div class="logo times"><svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5"/></svg></div></li>
+      <li><div class="logo"><img src="assets/logos/hoiv.png" alt="HOIV – Home of InnoVation" width="302" height="96" style="height:calc(var(--u)*64)"></div><span>Co-organiser &amp; venue</span></li>
+      <li aria-hidden="true"><div class="logo times"><svg viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.5"/></svg></div></li>
+      <li><div class="logo"><img src="assets/logos/start-vienna.png" alt="START Vienna" width="222" height="90" style="height:calc(var(--u)*64)"></div><span>Co-organiser</span></li>
+    </ul>
+  </section>
+
+  <section class="slide slide-scan" data-seconds="20">
+    <img class="mark" src="assets/wordmark-wide.svg" alt="Building Better Worlds Hackathon" width="2067" height="350">
+    <h2>Scan to Get Set Up</h2>
+    <ul class="scan">
+      <li>
+        <img src="assets/qr/qr-discord.svg" alt="QR code for the Discord onboarding page, onboarding.hoiv.me/hack" width="480" height="480">
+        <div><h3>Join Discord</h3><p>Briefs, mentors, submissions</p></div>
+      </li>
+      <li>
+        <img src="assets/qr/qr-links.svg" alt="QR code for the proximata link page, linktr.ee/proximata" width="480" height="480">
+        <div><h3>proximata Links</h3><p>Our ecosystem</p></div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="slide slide-sponsors" data-seconds="12">
+    <img class="mark" src="assets/wordmark-wide.svg" alt="Building Better Worlds Hackathon" width="2067" height="350">
+    <h2>Sponsors</h2>
+    <ul class="logos sponsors">
+      <li>
+        <span class="item" style="--s:.95"><img src="assets/logos/n8n.svg" alt="n8n" width="480" height="96"></span>
+        <span class="item"><img src="assets/logos/techbold.png" alt="techbold" width="482" height="96"></span>
+      </li>
+      <li>
+        <span class="item" style="--s:1.1"><img src="assets/logos/rhomberg.svg" alt="Rhomberg" width="478" height="94"></span>
+        <span class="item"><img src="assets/logos/adaption.svg" alt="Adaption" width="426" height="100"></span>
+      </li>
+      <li>
+        <span class="item" style="--s:1.3"><img src="assets/logos/maritime-mark.png" alt="" width="71" height="96"><span class="word">maritime</span></span>
+        <span class="item"><img src="assets/logos/lovable.svg" alt="Lovable" width="550" height="100"></span>
+      </li>
+      <li>
+        <span class="item"><img src="assets/logos/biscuit.svg" alt="Biscuit" width="456" height="100"></span>
+        <span class="item"><img src="assets/logos/red-bull.svg" alt="Red Bull" width="623" height="100"></span>
+      </li>
+      <li>
+        <span class="item" style="--s:1.15"><img src="assets/logos/feodos.png" alt="FEODOS" width="356" height="96"></span>
+        <span class="item" style="--s:1.7"><img src="assets/logos/db-tech.png" alt="DB tech" width="441" height="333"></span>
+        <span class="item" style="--s:.9"><img src="assets/logos/talona.png" alt="Talona" width="881" height="192"></span>
+      </li>
+    </ul>
+    <h2 class="minor">Partners</h2>
+    <ul class="logos partners">
+      <li>
+        <span class="item" style="--s:.8"><img src="assets/logos/ewor.svg" alt="EWOR" width="405" height="100"></span>
+        <span class="item" style="--s:.85"><img src="assets/logos/tu-wien-robotics-club.svg" alt="TU Wien Robotics Club" width="566" height="100"></span>
+      </li>
+      <li>
+        <span class="item" style="--s:.95"><img src="assets/logos/wu-crypto-club.png" alt="WU Crypto Club" width="432" height="96"></span>
+        <span class="item" style="--s:1.1"><img src="assets/logos/hackathonhub-mark.png" alt="" width="103" height="96"><span class="word">Hackathonhub</span></span>
+      </li>
+    </ul>
+  </section>
+
+  <div class="progress" aria-hidden="true"><span><i></i></span><span><i></i></span><span><i></i></span></div>
+</main>
+
+<script>
+/* "Liquid glass" event logo (WebGL2), taken from the landing page in ../index.html.
+   It is an enhancement: without WebGL2 the flat logo underneath simply stays visible. */
+(function () {
+  'use strict';
+  var W = window, D = document;
+  function $1(s, r) { return (r || D).querySelector(s); }
+  function noop() {}
+  var raf = W.requestAnimationFrame.bind(W);
+  var GLASS = (function () {
+    var Ri = { ink: '#23201E', paper: '#F4F7F8', brand: '#202D85', ice: '#C8F1FF', signal: '#D82434', white: '#FFFFFF' };
+    function zi(e) {
+  let t = Number.parseInt(e.slice(1), 16);
+  return [((t >> 16) & 255) / 255, ((t >> 8) & 255) / 255, (t & 255) / 255];
+}
+var Bi = 1024,
+  Vi = 50,
+  Hi = 1.95,
+  Ui = 0.01;
+function Wi(e, t, n) {
+  let r = t * n,
+    i = new Float32Array(r),
+    a = [],
+    o = [];
+  for (let i = 0; i < r; i++) {
+    if (e[i] === 0) continue;
+    let r = i % t,
+      s = Math.floor(i / t);
+    ((r + s) % 2 == 0 ? a : o).push(i, s > 0 ? i - t : -1, s < n - 1 ? i + t : -1, r > 0 ? i - 1 : -1, r < t - 1 ? i + 1 : -1);
+  }
+  let s = [Int32Array.from(a), Int32Array.from(o)],
+    c = Hi / 4;
+  for (let e = 0; e < Vi; e++)
+    for (let e of s)
+      for (let t = 0; t < e.length; t += 5) {
+        let n = e[t],
+          r = e[t + 1] >= 0 ? i[e[t + 1]] : 0,
+          a = e[t + 2] >= 0 ? i[e[t + 2]] : 0,
+          o = e[t + 3] >= 0 ? i[e[t + 3]] : 0,
+          s = e[t + 4] >= 0 ? i[e[t + 4]] : 0;
+        i[n] = -0.95 * i[n] + c * (Ui + r + a + o + s);
+      }
+  return i;
+}
+function Gi(e) {
+  let t = e.naturalWidth,
+    n = e.naturalHeight;
+  if (!t || !n) return null;
+  let r = Bi / Math.min(t, n),
+    i = Bi * Bi,
+    a = t * r * (n * r);
+  a > i && (r *= Math.sqrt(i / a));
+  let o = Math.max(1, Math.round(t * r)),
+    s = Math.max(1, Math.round(n * r)),
+    c = document.createElement(`canvas`);
+  ((c.width = o), (c.height = s));
+  let l = c.getContext(`2d`, { willReadFrequently: !0 });
+  if (!l) return null;
+  l.drawImage(e, 0, 0, o, s);
+  let u = l.getImageData(0, 0, o, s).data,
+    d = o * s,
+    f = new Uint8Array(d);
+  for (let e = 0; e < d; e++) f[e] = +(u[e * 4 + 3] > 0);
+  let p = new Uint8Array(d);
+  for (let e = 0; e < d; e++) {
+    if (!f[e]) continue;
+    let t = e % o,
+      n = Math.floor(e / o);
+    if (t === 0 || t === o - 1 || n === 0 || n === s - 1) continue;
+    let r = !1;
+    for (let e = -1; e <= 1 && !r; e++) for (let i = -1; i <= 1 && !r; i++) (i !== 0 || e !== 0) && !f[(n + e) * o + (t + i)] && (r = !0);
+    r || (p[e] = 1);
+  }
+  let m = Wi(p, o, s),
+    h = 0;
+  for (let e = 0; e < d; e++) m[e] > h && (h = m[e]);
+  let g = document.createElement(`canvas`);
+  ((g.width = o), (g.height = s));
+  let _ = g.getContext(`2d`);
+  if (!_) return null;
+  let v = _.createImageData(o, s);
+  for (let e = 0; e < d; e++) {
+    let t = h > 0 ? m[e] / h : 0;
+    ((v.data[e * 4] = Math.round(t * 255)),
+      (v.data[e * 4 + 1] = 255 - u[e * 4 + 3]),
+      (v.data[e * 4 + 2] = f[e] ? 255 : 0),
+      (v.data[e * 4 + 3] = 255));
+  }
+  _.putImageData(v, 0, 0);
+  let y = document.createElement(`canvas`);
+  ((y.width = t), (y.height = n));
+  let b = y.getContext(`2d`);
+  return b ? ((b.imageSmoothingEnabled = !0), b.drawImage(g, 0, 0, t, n), y) : null;
+}
+var Ki = new Map();
+function qi(e) {
+  let t = Ki.get(e);
+  return (
+    t ||
+      ((t = new Promise((t, n) => {
+        let r = new Image();
+        ((r.decoding = `async`), (r.onload = () => t(r)), (r.onerror = () => n(Error(`Failed to load ${e}`))), (r.src = e));
+      }).then(Gi)),
+      Ki.set(e, t)),
+    t
+  );
+}
+    var Ji = `#version 300 es
+precision highp float;
+
+in vec2 a_position;
+in vec2 a_texCoord;
+
+out vec2 v_uv;
+
+void main() {
+    v_uv = a_texCoord;
+    gl_Position = vec4(a_position, 0.0, 1.0);
+}
+`,
+  Yi = `#version 300 es
+precision highp float;
+
+in vec2 v_uv;
+out vec4 fragColor;
+
+uniform sampler2D u_image;
+uniform vec4 u_colorBack;
+uniform vec4 u_colorA;
+uniform vec4 u_colorB;
+uniform vec4 u_colorHighlight;
+uniform vec4 u_colorShadow;
+uniform float u_seed;
+uniform float u_speed;
+uniform float u_scale;
+uniform float u_motionMode;
+uniform float u_direction;
+uniform float u_octaves;
+uniform float u_persistence;
+uniform float u_lacunarity;
+uniform float u_warpDepth;
+uniform float u_warp;
+uniform float u_ior;
+uniform float u_dispersion;
+uniform float u_contour;
+uniform float u_falloff;
+uniform float u_shapeContour;
+uniform float u_bend;
+uniform float u_noise;
+uniform float u_bumpStrength;
+uniform float u_bumpDist;
+uniform float u_lightAngle;
+uniform float u_ambient;
+uniform float u_brightness;
+uniform float u_contrast;
+uniform float u_saturation;
+uniform sampler2D u_image_heightmap;
+
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform float u_deltaTime;
+uniform float u_pixelRatio;
+
+// === PCG-BASED VALUE NOISE ===
+
+uint pcg(uint s) {
+    s = s * 747796405u + 2891336453u;
+    s = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u;
+    return s ^ (s >> 22u);
+}
+
+float hashVal(vec2 p) {
+    uvec2 q = uvec2(floatBitsToUint(p.x), floatBitsToUint(p.y));
+    return float(pcg(q.x ^ pcg(q.y))) / float(0xFFFFFFFFu);
+}
+
+float valueNoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hashVal(i);
+    float b = hashVal(i + vec2(1, 0));
+    float c = hashVal(i + vec2(0, 1));
+    float d = hashVal(i + vec2(1, 1));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// === FBM ===
+
+float fbm(vec2 p, float lac, int oct, float pers) {
+    float v = 0.0, a = 0.5;
+    mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+    for (int i = 0; i < oct; i++) {
+        v += a * valueNoise(p);
+        p = rot * p * lac;
+        a *= pers;
+    }
+    return v;
+}
+
+// === DOMAIN WARPING ===
+
+float warpedField(vec2 p, float t, float lac, int oct, float pers, float warpDepth, float mode, float dir, float seed) {
+
+    uint s = uint(seed);
+    float sx = float(pcg(s)) / float(0xFFFFFFFFu);
+    float sy = float(pcg(s + 73u)) / float(0xFFFFFFFFu);
+    p += (vec2(sx, sy) - 0.5) * 200.0;
+
+    if (mode < 0.5) {
+        vec2 drift = vec2(t * 0.4, -t * 0.3);
+        vec2 q = vec2(
+            fbm(p + drift, lac, oct, pers),
+            fbm(p + vec2(5.2, 1.3) + drift.yx, lac, oct, pers)
+        );
+        if (warpDepth < 1.5) return fbm(p + q * 4.0, lac, oct, pers);
+        vec2 r = vec2(
+            fbm(p + q * 4.0 + vec2(1.7, 9.2) + drift * 0.7, lac, oct, pers),
+            fbm(p + q * 4.0 + vec2(8.3, 2.8) - drift * 0.5, lac, oct, pers)
+        );
+        return fbm(p + r * 4.0, lac, oct, pers);
+    }
+
+    if (mode < 1.5) {
+        float a = dir * 3.14159 / 180.0;
+        p += vec2(cos(a), sin(a)) * t * 0.6;
+    } else {
+        float ang = atan(p.y, p.x);
+        float rad = length(p);
+        p += vec2(cos(ang + t * 0.5), sin(ang + t * 0.5)) * rad * 0.4;
+    }
+
+    vec2 drift = vec2(t * 0.15, -t * 0.2);
+    vec2 q = vec2(
+        fbm(p + drift, lac, oct, pers),
+        fbm(p + vec2(5.2, 1.3) + drift.yx, lac, oct, pers)
+    );
+    if (warpDepth < 1.5) return fbm(p + q * 4.0, lac, oct, pers);
+    vec2 r = vec2(
+        fbm(p + q * 4.0 + vec2(1.7, 9.2) + drift * 0.7, lac, oct, pers),
+        fbm(p + q * 4.0 + vec2(8.3, 2.8) - drift * 0.5, lac, oct, pers)
+    );
+    return fbm(p + r * 4.0, lac, oct, pers);
+}
+
+// === HEIGHTMAP HELPERS ===
+
+float blurDepth3x3(vec2 uv, vec2 dudx, vec2 dudy, vec2 texel, float radius) {
+    vec2 r = radius * texel;
+
+    float sum = 4.0 * textureGrad(u_image_heightmap, uv, dudx, dudy).r;
+
+    sum += 2.0 * textureGrad(u_image_heightmap, uv + vec2(0.0, -r.y), dudx, dudy).r;
+    sum += 2.0 * textureGrad(u_image_heightmap, uv + vec2(0.0,  r.y), dudx, dudy).r;
+    sum += 2.0 * textureGrad(u_image_heightmap, uv + vec2(-r.x, 0.0), dudx, dudy).r;
+    sum += 2.0 * textureGrad(u_image_heightmap, uv + vec2( r.x, 0.0), dudx, dudy).r;
+
+    sum += textureGrad(u_image_heightmap, uv + vec2(-r.x, -r.y), dudx, dudy).r;
+    sum += textureGrad(u_image_heightmap, uv + vec2( r.x, -r.y), dudx, dudy).r;
+    sum += textureGrad(u_image_heightmap, uv + vec2(-r.x,  r.y), dudx, dudy).r;
+    sum += textureGrad(u_image_heightmap, uv + vec2( r.x,  r.y), dudx, dudy).r;
+
+    return sum / 16.0;
+}
+
+vec2 heightGrad(vec2 uv, vec2 dudx, vec2 dudy, vec2 texel) {
+    float eps = 4.0;
+    float dR = blurDepth3x3(uv + vec2(eps * texel.x, 0.0), dudx, dudy, texel, 4.0);
+    float dL = blurDepth3x3(uv - vec2(eps * texel.x, 0.0), dudx, dudy, texel, 4.0);
+    float dU = blurDepth3x3(uv + vec2(0.0, eps * texel.y), dudx, dudy, texel, 4.0);
+    float dD = blurDepth3x3(uv - vec2(0.0, eps * texel.y), dudx, dudy, texel, 4.0);
+    return vec2(dR - dL, dU - dD) / (2.0 * eps * texel);
+}
+
+// === MAIN ===
+
+void main() {
+
+    vec2 uv = vec2(v_uv.x, 1.0 - v_uv.y);
+    vec2 texSize = vec2(textureSize(u_image_heightmap, 0));
+    float imgAspect = texSize.x / texSize.y;
+    float canvasAspect = u_resolution.x / u_resolution.y;
+
+    if (canvasAspect > imgAspect) {
+        uv.x = (uv.x - 0.5) * (canvasAspect / imgAspect) + 0.5;
+    } else {
+        uv.y = (uv.y - 0.5) * (imgAspect / canvasAspect) + 0.5;
+    }
+
+    float aaScale = max(1.0, 2.0 / u_pixelRatio);
+
+    vec2 dudx = dFdx(uv);
+    vec2 dudy = dFdy(uv);
+
+    vec4 hm = textureGrad(u_image_heightmap, uv, dudx, dudy);
+    float fw_b = fwidth(hm.b) / aaScale;
+    float hardMask = smoothstep(0.5 - fw_b, 0.5 + fw_b, hm.b);
+    float opacity = hardMask * (1.0 - hm.g);
+
+    float edgeDist;
+    if (canvasAspect > imgAspect) {
+        edgeDist = min(uv.x, 1.0 - uv.x);
+    } else if (canvasAspect < imgAspect) {
+        edgeDist = min(uv.y, 1.0 - uv.y);
+    } else {
+        edgeDist = 1.0;
+    }
+    opacity *= smoothstep(0.0, 1.0 * fwidth(edgeDist), edgeDist);
+
+    if (opacity < 0.001) {
+        fragColor = vec4(u_colorBack.rgb * u_colorBack.a, u_colorBack.a);
+        return;
+    }
+
+    vec2 texel = 1.0 / texSize;
+    float t = mod(u_time * u_speed, 3600.0);
+
+    float lac = u_lacunarity;
+    int   oct = int(u_octaves);
+    float pers = u_persistence;
+    float warpD = u_warpDepth;
+    float mode = u_motionMode;
+    float dir = u_direction;
+    float seed = u_seed;
+
+    float depth = max(blurDepth3x3(uv, dudx, dudy, texel, 6.0), 0.001);
+
+    vec2  grad = heightGrad(uv, dudx, dudy, texel);
+    float gradMag = min(length(grad), 5.0);
+    vec2  gradDir = gradMag > 0.001 ? normalize(grad) : vec2(0.0);
+    vec2  contourDir = vec2(-gradDir.y, gradDir.x);
+
+    float boundaryFade = smoothstep(0.0, 0.05, depth);
+
+    float falloffNorm = clamp(u_falloff / 20.0, 0.0, 1.0);
+    float lensExp = mix(0.3, 3.0, falloffNorm);
+    float lens = pow(clamp(depth, 0.0, 1.0), lensExp);
+    float glass = smoothstep(0.0, 0.05, depth) * lens;
+
+    float edgeShape = (1.0 - lens) * boundaryFade;
+
+    float edgeFactor = smoothstep(0.0, 0.5, gradMag * u_contour * 2.0) * glass * boundaryFade;
+    float contourMod = u_contour * boundaryFade;
+
+    float lightAng = u_lightAngle * 3.14159 / 180.0;
+    vec2 lightDir = vec2(cos(lightAng), sin(lightAng));
+
+    vec2 p = (uv - 0.5) * 2.0;
+    p.x *= imgAspect;
+    p.y = -p.y;
+
+    // === SHAPE-AWARE COORDINATE WARPING (independent from glass contour) ===
+    float edgeProximity = 1.0 - smoothstep(0.0, 0.8, depth);
+    float innerIntensity = smoothstep(0.0, 0.4, depth);
+
+    p += contourDir * edgeProximity * u_bend * 2.0;
+    p -= gradDir * edgeProximity * u_bend * 0.5;
+    p *= max(0.5, mix(1.0, 0.4 + 0.6 * smoothstep(0.0, 0.5, depth), u_shapeContour));
+
+    float warpMix = glass * u_warp;
+    float baseLens = sqrt(max(glass, 0.001) / 0.3);
+
+    float iorBase = mix(1.2, 2.5, u_ior);
+    float dispCoeff = u_dispersion * 0.2;
+    float dispIntensity = u_dispersion * 3.0;
+    vec3 wavelengths = vec3(0.65, 0.55, 0.45);
+
+    float ns = u_scale * 3.0;
+
+    // === PER-PIXEL GRAIN ===
+    vec2 noiseCoord = v_uv * u_resolution;
+    uint grainHash = pcg(uint(noiseCoord.x) * 1933u ^ uint(noiseCoord.y) * 7919u);
+    float grain = 1.0 + (float(grainHash) / float(0xFFFFFFFFu) - 0.5) * u_noise;
+
+    vec3 vDispersed = vec3(0.0);
+
+    for (int c = 0; c < 3; c++) {
+        vec2 pp = p;
+
+        float wl = wavelengths[c];
+        float ior = iorBase + dispCoeff / (wl * wl);
+        float iorMid = iorBase + dispCoeff / 0.3025;
+
+        float lensScale = mix(1.0, ior / iorMid, edgeFactor);
+
+        pp = mix(pp, pp * baseLens * lensScale, warpMix);
+
+        pp *= max(0.35, 0.1 + (1.1 - edgeShape) * (1.0 - 0.5 * edgeShape));
+        pp -= gradDir * edgeShape * contourMod * 2.0;
+        pp *= max(0.5, mix(1.0, 1.0 - edgeShape, smoothstep(0.5, 1.0, contourMod)));
+
+        vDispersed[c] = warpedField(pp * ns, t, lac, oct, pers, warpD, mode, dir, seed) * grain;
+    }
+
+    // === SHAPE CONTOUR VALUE MODULATION ===
+    float contourHeat = (1.0 - innerIntensity) * u_shapeContour;
+    for (int c = 0; c < 3; c++) {
+        vDispersed[c] = mix(vDispersed[c], vDispersed[c] * innerIntensity + contourHeat, 0.5 + 0.5 * u_shapeContour);
+    }
+
+    vec2 ppRef = p;
+    ppRef = mix(ppRef, ppRef * baseLens, warpMix);
+    ppRef *= max(0.35, 0.1 + (1.1 - edgeShape) * (1.0 - 0.5 * edgeShape));
+    ppRef -= gradDir * edgeShape * contourMod * 2.0;
+    ppRef *= max(0.5, mix(1.0, 1.0 - edgeShape, smoothstep(0.5, 1.0, contourMod)));
+
+    float n = vDispersed.g;
+
+    float eps = 0.8 / u_bumpDist;
+    float nR = warpedField((ppRef + vec2(eps, 0.0)) * ns, t, lac, oct, pers, warpD, mode, dir, seed);
+    float nU = warpedField((ppRef + vec2(0.0, eps)) * ns, t, lac, oct, pers, warpD, mode, dir, seed);
+    vec2 fieldGrad = vec2(nR - n, nU - n) / eps;
+
+    float diffuse = dot(fieldGrad, lightDir);
+    float highlight = max(diffuse, 0.0);
+    float shadow = max(-diffuse, 0.0);
+    highlight = highlight * highlight * 0.15 + pow(highlight, 4.0) * 0.05;
+    shadow = shadow * shadow * 0.1 + pow(shadow, 4.0) * 0.03;
+
+    float nLift = mix(0.3, 1.0, n);
+    float nSq = nLift * nLift;
+    vec3 chromaDiff = vDispersed - n;
+
+    vec3 hiCol = u_colorHighlight.rgb;
+    vec3 shCol = u_colorShadow.rgb;
+
+    float bumpFade = smoothstep(0.0, 1.0, depth);
+    vec3 col = nSq * (hiCol * highlight * u_bumpStrength * bumpFade
+         + shCol * shadow * u_bumpStrength * bumpFade
+         + 0.5);
+
+    col += chromaDiff * dispIntensity * edgeFactor * 0.5;
+
+    vec3 tintLo = u_colorA.rgb;
+    vec3 tintHi = u_colorB.rgb;
+    col = mix(tintLo, tintHi, col);
+
+    col += u_ambient;
+
+    // Exposure in linear space
+    col *= 2.0 * u_brightness;
+
+    // Gamma
+    col = sqrt(max(col, 0.0));
+
+    // Contrast + saturation in sRGB (cheap, good enough)
+    col = (col - 0.5) * u_contrast + 0.5;
+    float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+    col = mix(vec3(lum), col, u_saturation);
+    col = clamp(col, 0.0, 1.0);
+
+    col *= opacity;
+    vec3 bgColor = u_colorBack.rgb * u_colorBack.a;
+    col = col + bgColor * (1.0 - opacity);
+    float finalAlpha = opacity + u_colorBack.a * (1.0 - opacity);
+
+    fragColor = vec4(col, finalAlpha);
+}
+`,
+  Xi = { low: Ri.brand, high: Ri.ice, highlight: Ri.white, shadow: Ri.ink };
+function Zi(e) {
+  let [t, n, r] = zi(e);
+  return [t * t, n * n, r * r, 1];
+}
+var Qi = {
+  u_ambient: 0,
+  u_bend: 0.65,
+  u_bumpDist: 10,
+  u_bumpStrength: 0.7,
+  u_colorBack: [0, 0, 0, 0],
+  u_contour: 0.05,
+  u_direction: 0,
+  u_dispersion: 0,
+  u_falloff: 2,
+  u_ior: 0.5,
+  u_lacunarity: 1.7,
+  u_lightAngle: 200,
+  u_motionMode: 0,
+  u_noise: 0,
+  u_octaves: 3,
+  u_persistence: 0.65,
+  u_saturation: 1,
+  u_scale: 0.2,
+  u_shapeContour: 0.7,
+  u_warp: 0.5,
+  u_warpDepth: 2,
+};
+function $i(e, t, n) {
+  let r = e.createShader(t);
+  if (!r) throw Error(`Failed to create shader`);
+  if ((e.shaderSource(r, n), e.compileShader(r), !e.getShaderParameter(r, e.COMPILE_STATUS))) {
+    let t = e.getShaderInfoLog(r);
+    throw (e.deleteShader(r), Error(`Logo glass shader failed to compile: ${t}`));
+  }
+  return r;
+}
+function ea(e) {
+  let t = e.createProgram(),
+    n = $i(e, e.VERTEX_SHADER, Ji),
+    r = $i(e, e.FRAGMENT_SHADER, Yi);
+  if (
+    (e.attachShader(t, n),
+    e.attachShader(t, r),
+    e.linkProgram(t),
+    e.deleteShader(n),
+    e.deleteShader(r),
+    !e.getProgramParameter(t, e.LINK_STATUS))
+  )
+    throw Error(`Logo glass program failed to link: ${e.getProgramInfoLog(t)}`);
+  return t;
+}
+function ta(e, t) {
+  for (let [n, r] of [
+    [`a_position`, [-1, -1, 1, -1, -1, 1, 1, 1]],
+    [`a_texCoord`, [0, 0, 1, 0, 0, 1, 1, 1]],
+  ]) {
+    let i = e.getAttribLocation(t, n);
+    if (i < 0) continue;
+    let a = e.createBuffer();
+    (e.bindBuffer(e.ARRAY_BUFFER, a),
+      e.bufferData(e.ARRAY_BUFFER, new Float32Array(r), e.STATIC_DRAW),
+      e.enableVertexAttribArray(i),
+      e.vertexAttribPointer(i, 2, e.FLOAT, !1, 0, 0));
+  }
+}
+    return { qi: qi, ea: ea, ta: ta, Qi: Qi, Xi: Xi, Zi: Zi };
+  })();
+  function initGlass(host, src, o) {
+    var t = $1('canvas', host), fallback = $1('img', host);
+    var n = t.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false });
+    if (!n) return noop;
+    var s = false, c = 0, l = false, u = null, p = {};
+    function h(e) { return p[e] != null ? p[e] : null; }
+    var g = W.matchMedia('(prefers-reduced-motion: reduce)').matches, t0 = performance.now();
+    function v() {
+      var e = Math.min(W.devicePixelRatio || 1, 2), r = Math.max(1, Math.round(t.clientWidth * e)), i = Math.max(1, Math.round(t.clientHeight * e));
+      if (t.width !== r || t.height !== i) { t.width = r; t.height = i; }
+      n.viewport(0, 0, r, i);
+      return e;
+    }
+    function y(e) {
+      if (!u || s) return;
+      var r = v();
+      n.useProgram(u);
+      n.uniform1f(h('u_time'), (e - t0) / 1e3);
+      n.uniform2f(h('u_resolution'), t.width, t.height);
+      n.uniform1f(h('u_pixelRatio'), r);
+      n.clearColor(0, 0, 0, 0);
+      n.clear(n.COLOR_BUFFER_BIT);
+      n.drawArrays(n.TRIANGLE_STRIP, 0, 4);
+    }
+    function b(e) { y(e); if (l && !g) c = raf(b); }
+    /* Animate only while the logo slide is showing. */
+    var seen = false, active = true, later = 0;
+    function sync() { l = seen && active; cancelAnimationFrame(c); if (l && u) c = raf(b); }
+    var x = new IntersectionObserver(function (es) { seen = es[0] ? es[0].isIntersecting : false; sync(); });
+    x.observe(t);
+    W.BBW_TITLE = function (on) {
+      clearTimeout(later);
+      if (on) { active = true; sync(); } else later = setTimeout(function () { active = false; sync(); }, 1200);
+    };
+    GLASS.qi(src).then(function (e) {
+      if (s || !e) return;
+      u = GLASS.ea(n); n.useProgram(u); GLASS.ta(n, u);
+      var names = Object.keys(GLASS.Qi).concat(['u_colorA', 'u_colorB', 'u_colorHighlight', 'u_colorShadow', 'u_contrast', 'u_brightness', 'u_seed', 'u_speed', 'u_time', 'u_resolution', 'u_pixelRatio', 'u_deltaTime', 'u_image_heightmap']);
+      names.forEach(function (k) { p[k] = n.getUniformLocation(u, k); });
+      Object.keys(GLASS.Qi).forEach(function (k) {
+        var val = GLASS.Qi[k];
+        if (Array.isArray(val)) n.uniform4fv(h(k), val); else n.uniform1f(h(k), val);
+      });
+      var pal = GLASS.Xi;
+      n.uniform4fv(h('u_colorA'), GLASS.Zi(pal.low));
+      n.uniform4fv(h('u_colorB'), GLASS.Zi(pal.high));
+      n.uniform4fv(h('u_colorHighlight'), GLASS.Zi(pal.highlight));
+      n.uniform4fv(h('u_colorShadow'), GLASS.Zi(pal.shadow));
+      n.uniform1f(h('u_contrast'), o.contrast);
+      n.uniform1f(h('u_brightness'), o.brightness);
+      n.uniform1f(h('u_seed'), o.seed);
+      n.uniform1f(h('u_speed'), o.speed);
+      n.uniform1f(h('u_deltaTime'), 1 / 60);
+      var tex = n.createTexture();
+      n.activeTexture(n.TEXTURE0);
+      n.bindTexture(n.TEXTURE_2D, tex);
+      n.texImage2D(n.TEXTURE_2D, 0, n.RGBA, n.RGBA, n.UNSIGNED_BYTE, e);
+      n.texParameteri(n.TEXTURE_2D, n.TEXTURE_WRAP_S, n.CLAMP_TO_EDGE);
+      n.texParameteri(n.TEXTURE_2D, n.TEXTURE_WRAP_T, n.CLAMP_TO_EDGE);
+      n.generateMipmap(n.TEXTURE_2D);
+      n.texParameteri(n.TEXTURE_2D, n.TEXTURE_MIN_FILTER, n.LINEAR_MIPMAP_LINEAR);
+      n.texParameteri(n.TEXTURE_2D, n.TEXTURE_MAG_FILTER, n.LINEAR);
+      n.uniform1i(h('u_image_heightmap'), 0);
+      y(performance.now());
+      fallback.classList.remove('opacity-100'); fallback.classList.add('opacity-0');
+      if (l && !g) c = raf(b);
+    }).catch(function (e) { if (W.console) console.warn(e); });
+    return function () { s = true; cancelAnimationFrame(c); x.disconnect(); if (u) n.deleteProgram(u); };
+  }
+  var host = $1('.glass');
+  if (host && W.IntersectionObserver && !/[?&]glass=0(&|$)/.test(W.location.search)) initGlass(host, $1('img', host).getAttribute('src'), { contrast: 3.2, brightness: 0.7, seed: 55, speed: 0.3 });
+})();
+</script>
+<script>
+/* Slide loop. One timer drives it, so it keeps advancing when the computer has animations switched off. */
+(function () {
+  'use strict';
+  var D = document, W = window, root = D.documentElement;
+
+  var query = {};
+  W.location.search.replace(/[?&]([^=&]+)=([^&]*)/g, function (m, k, v) { query[k] = decodeURIComponent(v); });
+
+  var rotate = parseInt(query.rotate, 10);
+  if (rotate === 90 || rotate === 270) root.className += ' rot rot' + rotate;
+  else if (rotate === 180) root.className += ' rot180';
+
+  var slides = Array.prototype.slice.call(D.querySelectorAll('.slide'));
+  var fills = Array.prototype.slice.call(D.querySelectorAll('.progress i'));
+  var reduced = !!(W.matchMedia && W.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var only = parseInt(query.only, 10);
+  var held = only >= 1 && only <= slides.length;
+  var current = 0, timer = null, changed = false, paused = false;
+
+  function show(n) {
+    current = (n + slides.length) % slides.length;
+    var ms = (parseFloat(slides[current].getAttribute('data-seconds')) || 10) * 1000;
+    slides.forEach(function (s, k) {
+      if (k === current) s.classList.add('is-active'); else s.classList.remove('is-active');
+    });
+    fills.forEach(function (f, k) {
+      f.style.transition = 'none';
+      f.style.transform = k < current || (held && k === current) ? 'scaleX(1)' : 'scaleX(0)';
+    });
+    if (W.BBW_TITLE) W.BBW_TITLE(current === 0);
+    clearTimeout(timer);
+    if (held) return;
+    var fill = fills[current];
+    if (fill) {
+      void fill.offsetWidth;
+      if (!reduced) fill.style.transition = 'transform ' + ms + 'ms linear';
+      fill.style.transform = 'scaleX(1)';
+    }
+    timer = setTimeout(next, ms);
+  }
+  function next() {
+    if (changed && current === slides.length - 1) { reloadIfReachable(); changed = false; }
+    show(current + 1);
+  }
+
+  /* Pick up a new version of this page without anyone touching the screen. */
+  var online = /^https?:$/.test(W.location.protocol) && !!W.fetch, baseline = null;
+  function fetchPage() {
+    return W.fetch(W.location.pathname + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.text() : null; });
+  }
+  var reloading = false;
+  function reloadIfReachable() {
+    if (reloading) return;
+    reloading = true;
+    fetchPage().then(function (t) { if (t) W.location.reload(); else reloading = false; }).catch(function () { reloading = false; });
+  }
+  function check() {
+    fetchPage().then(function (t) {
+      if (!t) return;
+      if (baseline === null) baseline = t;
+      else if (t !== baseline) { if (held) reloadIfReachable(); else changed = true; }
+    }).catch(function () {});
+  }
+  if (online) { check(); W.setInterval(check, 5 * 60 * 1000); }
+
+  /* Keep the display awake where the browser allows it. */
+  function stayAwake() {
+    if (navigator.wakeLock && D.visibilityState === 'visible') navigator.wakeLock.request('screen').catch(function () {});
+  }
+  stayAwake();
+  D.addEventListener('visibilitychange', stayAwake);
+
+  function toggleFullscreen() {
+    if (D.fullscreenElement) { if (D.exitFullscreen) D.exitFullscreen(); }
+    else if (root.requestFullscreen) { var p = root.requestFullscreen(); if (p && p.catch) p.catch(function () {}); }
+  }
+  D.addEventListener('click', toggleFullscreen);
+  D.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') { paused = false; show(current + 1); }
+    else if (e.key === 'ArrowLeft') { paused = false; show(current - 1); }
+    else if (e.key === ' ' && !held) {
+      e.preventDefault();
+      paused = !paused;
+      if (!paused) { show(current); return; }
+      clearTimeout(timer);
+      if (fills[current]) { fills[current].style.transition = 'none'; fills[current].style.transform = 'scaleX(1)'; }
+      if (W.BBW_TITLE) W.BBW_TITLE(false);
+    }
+    else if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+  });
+
+  show(held ? only - 1 : 0);
+})();
+</script>
+</body>
+</html>
